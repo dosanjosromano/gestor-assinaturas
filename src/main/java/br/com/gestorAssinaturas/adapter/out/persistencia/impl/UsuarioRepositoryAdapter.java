@@ -1,6 +1,7 @@
-package br.com.gestorAssinaturas.adapter.out.persistence;
+package br.com.gestorAssinaturas.adapter.out.persistencia.impl;
 
 
+import br.com.gestorAssinaturas.adapter.out.persistencia.UsuarioJpaRepository;
 import br.com.gestorAssinaturas.application.port.out.UsuarioRepositoryPort;
 import br.com.gestorAssinaturas.domain.model.Usuario;
 import org.springframework.stereotype.Component;

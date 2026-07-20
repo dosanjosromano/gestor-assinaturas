@@ -1,4 +1,4 @@
-package br.com.gestorAssinaturas.adapter.in.web;
+package br.com.gestorAssinaturas.adapter.in.web.controller.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

@@ -1,4 +1,4 @@
-package br.com.gestorAssinaturas.application.usecase;
+package br.com.gestorAssinaturas.application.service;
 
 import br.com.gestorAssinaturas.application.port.in.BuscaUsuariosUseCase;
 import br.com.gestorAssinaturas.application.port.out.UsuarioRepositoryPort;

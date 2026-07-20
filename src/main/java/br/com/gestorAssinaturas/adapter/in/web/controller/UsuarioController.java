@@ -1,8 +1,10 @@
-package br.com.gestorAssinaturas.adapter.in.web;
+package br.com.gestorAssinaturas.adapter.in.web.controller;
 
+import br.com.gestorAssinaturas.adapter.in.web.controller.request.CriarUsuarioRequest;
+import br.com.gestorAssinaturas.adapter.in.web.controller.response.UsuarioResponse;
 import br.com.gestorAssinaturas.application.port.in.BuscaUsuariosUseCase;
 import br.com.gestorAssinaturas.application.port.in.CriarUsuarioCommand;
-import br.com.gestorAssinaturas.application.port.in.CriarUsuarioUseCase;
+import br.com.gestorAssinaturas.application.port.in.useCase.CriarUsuarioUseCase;
 import br.com.gestorAssinaturas.domain.model.Usuario;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

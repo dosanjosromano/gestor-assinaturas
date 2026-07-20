@@ -1,4 +1,4 @@
-package br.com.gestorAssinaturas.adapter.in.web;
+package br.com.gestorAssinaturas.adapter.in.web.controller.response;
 
 import java.util.UUID;
 

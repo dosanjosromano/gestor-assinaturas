@@ -1,5 +1,6 @@
 package br.com.gestorAssinaturas.domain.model;
 
+import br.com.gestorAssinaturas.domain.exception.EstadoInvalidoException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -50,5 +51,27 @@ public class TentativaPagamento {
 
     public static TentativaPagamento iniciar(UUID id, UUID assinaturaId, TipoTentativa tipo, int tentativaNumero) {
         return new TentativaPagamento(id, assinaturaId, tipo, tentativaNumero);
+    }
+
+    public void aprovar() {
+        exigirStatus(StatusTentativa.INICIADA);
+        this.status = StatusTentativa.APROVADA;
+    }
+
+    public void recusar() {
+        exigirStatus(StatusTentativa.INICIADA);
+        this.status = StatusTentativa.RECUSADA;
+    }
+
+    public void marcarIndeterminada() {
+        exigirStatus(StatusTentativa.INICIADA);
+        this.status = StatusTentativa.INDETERMINADA;
+    }
+
+    private void exigirStatus(StatusTentativa esperado) {
+        if (this.status != esperado) {
+            throw new EstadoInvalidoException(
+                    "Tentativa %s esperava status %s mas está em %s".formatted(id, esperado, status));
+        }
     }
 }

@@ -1,7 +1,7 @@
-package br.com.gestorAssinaturas.application.usecase;
+package br.com.gestorAssinaturas.application.service;
 
 import br.com.gestorAssinaturas.application.port.in.CriarUsuarioCommand;
-import br.com.gestorAssinaturas.application.port.in.CriarUsuarioUseCase;
+import br.com.gestorAssinaturas.application.port.in.useCase.CriarUsuarioUseCase;
 import br.com.gestorAssinaturas.application.port.out.UsuarioRepositoryPort;
 import br.com.gestorAssinaturas.domain.exception.EmailJaCadastradoException;
 import br.com.gestorAssinaturas.domain.model.Usuario;
