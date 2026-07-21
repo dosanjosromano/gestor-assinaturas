@@ -7,6 +7,7 @@ import br.com.gestorAssinaturas.application.port.in.AssinaturaResultado;
 import br.com.gestorAssinaturas.application.port.in.useCase.BuscaAssinaturasUseCase;
 import br.com.gestorAssinaturas.application.port.in.CriarAssinaturaCommand;
 import br.com.gestorAssinaturas.application.port.in.useCase.BuscarAssinaturaAtivaUseCase;
+import br.com.gestorAssinaturas.application.port.in.useCase.CancelarAssinaturaUseCase;
 import br.com.gestorAssinaturas.application.port.in.useCase.CriarAssinaturaUseCase;
 import br.com.gestorAssinaturas.domain.model.Assinatura;
 import br.com.gestorAssinaturas.domain.model.StatusAssinatura;
@@ -14,12 +15,7 @@ import br.com.gestorAssinaturas.domain.model.StatusTentativa;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -30,13 +26,16 @@ public class AssinaturaController {
     private final CriarAssinaturaUseCase criarAssinaturaUseCase;
     private final BuscaAssinaturasUseCase buscaAssinaturasUseCase;
     private final BuscarAssinaturaAtivaUseCase buscarAssinaturaAtivaUseCase;
+    private final CancelarAssinaturaUseCase cancelarAssinaturaUseCase;
 
     public AssinaturaController(
             CriarAssinaturaUseCase criarAssinaturaUseCase, BuscaAssinaturasUseCase buscaAssinaturasUseCase,
-            BuscarAssinaturaAtivaUseCase buscarAssinaturaAtivaUseCase) {
+            BuscarAssinaturaAtivaUseCase buscarAssinaturaAtivaUseCase,
+            CancelarAssinaturaUseCase cancelarAssinaturaUseCase) {
         this.criarAssinaturaUseCase = criarAssinaturaUseCase;
         this.buscaAssinaturasUseCase = buscaAssinaturasUseCase;
         this.buscarAssinaturaAtivaUseCase = buscarAssinaturaAtivaUseCase;
+        this.cancelarAssinaturaUseCase = cancelarAssinaturaUseCase;
 
     }
 
@@ -84,6 +83,19 @@ public class AssinaturaController {
                 resultado.status().name(),
                 resultado.dataInicio(),
                 resultado.dataExpiracao());
+    }
+
+    @DeleteMapping("/{id}/cancelamento")
+    public AssinaturaResponse cancelar(@PathVariable UUID id, @RequestHeader("X-Usuario-Id") UUID usuarioId) {
+        Assinatura assinatura = cancelarAssinaturaUseCase.cancelar(id, usuarioId);
+
+        return new AssinaturaResponse(
+                assinatura.getId(),
+                assinatura.getUsuarioId(),
+                assinatura.getPlano().name(),
+                assinatura.getStatus().name(),
+                assinatura.getDataInicio(),
+                assinatura.getDataExpiracao());
     }
 
     private String statusExterno(AssinaturaResultado resultado) {
