@@ -20,6 +20,16 @@ spring:
     redis:
       host: localhost
       port: 6379
+      timeout: 5s
 
   kafka:
     bootstrap-servers: localhost:9092
+
+app:
+  gateway-pagamento:
+    mock:
+      taxa-aprovacao: 0.8
+      taxa-recusa: 0.15
+  cache:
+    assinatura-ativa:
+      ttl: 5m
