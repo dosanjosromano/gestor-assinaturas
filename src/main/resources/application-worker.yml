@@ -13,4 +13,4 @@ spring:
 
 app:
   scheduler:
-    renovacao-cron: "0 0 3 * * *"
+    renovacao-cron: "0 * * * * *"
