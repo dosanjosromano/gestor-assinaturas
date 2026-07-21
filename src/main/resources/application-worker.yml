@@ -14,3 +14,9 @@ spring:
 app:
   scheduler:
     renovacao-cron: "0 * * * * *"
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
