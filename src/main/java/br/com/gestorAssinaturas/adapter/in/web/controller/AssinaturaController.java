@@ -2,9 +2,11 @@ package br.com.gestorAssinaturas.adapter.in.web.controller;
 
 import br.com.gestorAssinaturas.adapter.in.web.controller.request.CriarAssinaturaRequest;
 import br.com.gestorAssinaturas.adapter.in.web.controller.response.AssinaturaResponse;
+import br.com.gestorAssinaturas.application.port.in.AssinaturaAtivaResultado;
 import br.com.gestorAssinaturas.application.port.in.AssinaturaResultado;
 import br.com.gestorAssinaturas.application.port.in.useCase.BuscaAssinaturasUseCase;
 import br.com.gestorAssinaturas.application.port.in.CriarAssinaturaCommand;
+import br.com.gestorAssinaturas.application.port.in.useCase.BuscarAssinaturaAtivaUseCase;
 import br.com.gestorAssinaturas.application.port.in.useCase.CriarAssinaturaUseCase;
 import br.com.gestorAssinaturas.domain.model.Assinatura;
 import br.com.gestorAssinaturas.domain.model.StatusAssinatura;
@@ -27,11 +29,15 @@ public class AssinaturaController {
 
     private final CriarAssinaturaUseCase criarAssinaturaUseCase;
     private final BuscaAssinaturasUseCase buscaAssinaturasUseCase;
+    private final BuscarAssinaturaAtivaUseCase buscarAssinaturaAtivaUseCase;
 
     public AssinaturaController(
-            CriarAssinaturaUseCase criarAssinaturaUseCase, BuscaAssinaturasUseCase buscaAssinaturasUseCase) {
+            CriarAssinaturaUseCase criarAssinaturaUseCase, BuscaAssinaturasUseCase buscaAssinaturasUseCase,
+            BuscarAssinaturaAtivaUseCase buscarAssinaturaAtivaUseCase) {
         this.criarAssinaturaUseCase = criarAssinaturaUseCase;
         this.buscaAssinaturasUseCase = buscaAssinaturasUseCase;
+        this.buscarAssinaturaAtivaUseCase = buscarAssinaturaAtivaUseCase;
+
     }
 
     @PostMapping
@@ -65,6 +71,19 @@ public class AssinaturaController {
                 assinatura.getStatus().name(),
                 assinatura.getDataInicio(),
                 assinatura.getDataExpiracao());
+    }
+
+    @GetMapping("/usuario/{usuarioId}")
+    public AssinaturaResponse buscarAtivaPorUsuario(@PathVariable UUID usuarioId) {
+        AssinaturaAtivaResultado resultado = buscarAssinaturaAtivaUseCase.buscarAtiva(usuarioId);
+
+        return new AssinaturaResponse(
+                resultado.assinaturaId(),
+                resultado.usuarioId(),
+                resultado.plano().name(),
+                resultado.status().name(),
+                resultado.dataInicio(),
+                resultado.dataExpiracao());
     }
 
     private String statusExterno(AssinaturaResultado resultado) {

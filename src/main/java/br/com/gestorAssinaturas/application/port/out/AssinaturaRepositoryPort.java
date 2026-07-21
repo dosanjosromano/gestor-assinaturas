@@ -13,4 +13,7 @@ public interface AssinaturaRepositoryPort {
     Optional<Assinatura> buscarPorId(UUID id);
 
     boolean existeAtivaOuPendentePara(UUID usuarioId);
+
+    Optional<Assinatura> buscarAtivaPorUsuario(UUID usuarioId);
+
 }
