@@ -1,6 +1,17 @@
 
-Sistema de gestão de assinaturas para um serviço de streaming: cadastro de
-usuários, criação/cobrança/renovação/cancelamento de assinaturas.
+# Sistema de Assinaturas
+
+## Contexto
+Sistema de gestão de assinaturas para serviço de streaming.
+Usuários assinam planos mensais com cobrança e renovação automáticas.
+
+## Stack
+- Java 21 + Spring Boot 3
+- PostgreSQL + Flyway (migrations versionadas — ver "Banco de dados" abaixo)
+- Redis (cache de leitura)
+- Kafka (orquestração de renovação automática)
+- JUnit 5 + Mockito
+
 
 Este README é deliberadamente prático — como subir e o que testar. 
 
