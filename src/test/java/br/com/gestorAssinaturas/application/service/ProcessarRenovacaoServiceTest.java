@@ -6,11 +6,13 @@ import br.com.gestorAssinaturas.application.port.out.ErroTecnicoGatewayException
 import br.com.gestorAssinaturas.application.port.out.GatewayPagamentoPort;
 import br.com.gestorAssinaturas.application.port.out.ResultadoPagamento;
 import br.com.gestorAssinaturas.application.port.out.TentativaPagamentoRepositoryPort;
+import br.com.gestorAssinaturas.application.port.out.UsuarioRepositoryPort;
 import br.com.gestorAssinaturas.domain.model.Assinatura;
 import br.com.gestorAssinaturas.domain.model.Plano;
 import br.com.gestorAssinaturas.domain.model.StatusAssinatura;
 import br.com.gestorAssinaturas.domain.model.StatusTentativa;
 import br.com.gestorAssinaturas.domain.model.TentativaPagamento;
+import br.com.gestorAssinaturas.domain.model.Usuario;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +50,9 @@ class ProcessarRenovacaoServiceTest {
     @Mock
     private CachePort cachePort;
 
+    @Mock
+    private UsuarioRepositoryPort usuarioRepositoryPort;
+
     private ProcessarRenovacaoService service;
 
     @BeforeEach
@@ -56,6 +61,7 @@ class ProcessarRenovacaoServiceTest {
                 assinaturaRepositoryPort,
                 tentativaPagamentoRepositoryPort,
                 gatewayPagamentoPort,
+                usuarioRepositoryPort,
                 cachePort,
                 TransactionOperations.withoutTransaction());
     }
@@ -66,6 +72,8 @@ class ProcessarRenovacaoServiceTest {
         for (int i = 0; i < falhas; i++) {
             assinatura.registrarFalhaRenovacao();
         }
+        when(usuarioRepositoryPort.buscarPorId(assinatura.getUsuarioId()))
+                .thenReturn(Optional.of(new Usuario(assinatura.getUsuarioId(), "Fulano", "fulano@teste.com")));
         return assinatura;
     }
 
@@ -155,6 +163,24 @@ class ProcessarRenovacaoServiceTest {
     }
 
     @Test
+    void usuarioInativoIgnoraEventoSemChamarGatewayNemAlterarAssinatura() {
+        Assinatura assinatura = new Assinatura(UUID.randomUUID(), UUID.randomUUID(), Plano.BASICO);
+        assinatura.confirmarPagamento();
+        Usuario usuarioInativo = new Usuario(assinatura.getUsuarioId(), "Fulano", "fulano@teste.com");
+        usuarioInativo.excluir();
+        when(assinaturaRepositoryPort.buscarPorId(assinatura.getId())).thenReturn(Optional.of(assinatura));
+        when(usuarioRepositoryPort.buscarPorId(assinatura.getUsuarioId())).thenReturn(Optional.of(usuarioInativo));
+
+        service.processar(assinatura.getId());
+
+        assertThat(assinatura.getStatus()).isEqualTo(StatusAssinatura.ATIVA);
+        assertThat(assinatura.getFalhasRenovacaoConsecutivas()).isZero();
+        verify(gatewayPagamentoPort, never()).cobrar(any(), anyString());
+        verify(tentativaPagamentoRepositoryPort, never()).salvar(any());
+        verify(assinaturaRepositoryPort, never()).salvar(any());
+    }
+
+    @Test
     void tentativaJaAprovadaParaMesmaChaveEIgnoradaIdempotentemente() {
         Assinatura assinatura = assinaturaAtivaComFalhas(0);
         TentativaPagamento tentativaJaAprovada = TentativaPagamento.iniciar(
@@ -169,4 +195,3 @@ class ProcessarRenovacaoServiceTest {
         verify(assinaturaRepositoryPort, never()).salvar(any());
     }
 }
-

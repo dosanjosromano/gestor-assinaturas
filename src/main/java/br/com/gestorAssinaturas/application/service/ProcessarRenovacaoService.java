@@ -9,12 +9,15 @@ import br.com.gestorAssinaturas.application.port.out.ErroTecnicoGatewayException
 import br.com.gestorAssinaturas.application.port.out.GatewayPagamentoPort;
 import br.com.gestorAssinaturas.application.port.out.ResultadoPagamento;
 import br.com.gestorAssinaturas.application.port.out.TentativaPagamentoRepositoryPort;
+import br.com.gestorAssinaturas.application.port.out.UsuarioRepositoryPort;
 import br.com.gestorAssinaturas.domain.exception.AssinaturaNaoEncontradaException;
 import br.com.gestorAssinaturas.domain.model.Assinatura;
 import br.com.gestorAssinaturas.domain.model.StatusAssinatura;
 import br.com.gestorAssinaturas.domain.model.StatusTentativa;
+import br.com.gestorAssinaturas.domain.model.StatusUsuario;
 import br.com.gestorAssinaturas.domain.model.TentativaPagamento;
 import br.com.gestorAssinaturas.domain.model.TipoTentativa;
+import br.com.gestorAssinaturas.domain.model.Usuario;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionOperations;
@@ -30,6 +33,7 @@ public class ProcessarRenovacaoService implements ProcessarRenovacaoUseCase {
     private final AssinaturaRepositoryPort assinaturaRepositoryPort;
     private final TentativaPagamentoRepositoryPort tentativaPagamentoRepositoryPort;
     private final GatewayPagamentoPort gatewayPagamentoPort;
+    private final UsuarioRepositoryPort usuarioRepositoryPort;
     private final CachePort cachePort;
     private final TransactionOperations transactionOperations;
 
@@ -37,11 +41,13 @@ public class ProcessarRenovacaoService implements ProcessarRenovacaoUseCase {
             AssinaturaRepositoryPort assinaturaRepositoryPort,
             TentativaPagamentoRepositoryPort tentativaPagamentoRepositoryPort,
             GatewayPagamentoPort gatewayPagamentoPort,
+            UsuarioRepositoryPort usuarioRepositoryPort,
             CachePort cachePort,
             TransactionOperations transactionOperations) {
         this.assinaturaRepositoryPort = assinaturaRepositoryPort;
         this.tentativaPagamentoRepositoryPort = tentativaPagamentoRepositoryPort;
         this.gatewayPagamentoPort = gatewayPagamentoPort;
+        this.usuarioRepositoryPort = usuarioRepositoryPort;
         this.cachePort = cachePort;
         this.transactionOperations = transactionOperations;
     }
@@ -52,6 +58,11 @@ public class ProcessarRenovacaoService implements ProcessarRenovacaoUseCase {
         if (assinatura.getStatus() != StatusAssinatura.ATIVA) {
             log.info("[ignorado] assinatura {} não está ATIVA (status={}) - evento de renovação descartado",
                     assinaturaId, assinatura.getStatus());
+            return;
+        }
+        if (!usuarioEstaAtivo(assinatura.getUsuarioId())) {
+            log.info("[ignorado] usuário {} não está ATIVO - evento de renovação da assinatura {} descartado",
+                    assinatura.getUsuarioId(), assinaturaId);
             return;
         }
 
@@ -83,6 +94,13 @@ public class ProcessarRenovacaoService implements ProcessarRenovacaoUseCase {
         return assinaturaRepositoryPort.buscarPorId(assinaturaId)
                 .orElseThrow(() -> new AssinaturaNaoEncontradaException(
                         "Assinatura %s não encontrada".formatted(assinaturaId)));
+    }
+
+    private boolean usuarioEstaAtivo(UUID usuarioId) {
+        return usuarioRepositoryPort.buscarPorId(usuarioId)
+                .map(Usuario::getStatus)
+                .map(status -> status == StatusUsuario.ATIVO)
+                .orElse(false);
     }
 
     private String idempotencyKey(UUID assinaturaId, int tentativaNumero) {
@@ -134,4 +152,3 @@ public class ProcessarRenovacaoService implements ProcessarRenovacaoUseCase {
         }
     }
 }
-

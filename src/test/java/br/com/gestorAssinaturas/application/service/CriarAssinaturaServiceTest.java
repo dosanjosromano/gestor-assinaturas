@@ -6,13 +6,17 @@ import br.com.gestorAssinaturas.application.port.out.AssinaturaRepositoryPort;
 import br.com.gestorAssinaturas.application.port.out.GatewayPagamentoPort;
 import br.com.gestorAssinaturas.application.port.out.ResultadoPagamento;
 import br.com.gestorAssinaturas.application.port.out.TentativaPagamentoRepositoryPort;
+import br.com.gestorAssinaturas.application.port.out.UsuarioRepositoryPort;
 import br.com.gestorAssinaturas.domain.exception.AssinaturaJaAtivaException;
 import br.com.gestorAssinaturas.domain.exception.PagamentoRecusadoException;
+import br.com.gestorAssinaturas.domain.exception.UsuarioInativoException;
+import br.com.gestorAssinaturas.domain.exception.UsuarioNaoEncontradoException;
 import br.com.gestorAssinaturas.domain.model.Assinatura;
 import br.com.gestorAssinaturas.domain.model.Plano;
 import br.com.gestorAssinaturas.domain.model.StatusAssinatura;
 import br.com.gestorAssinaturas.domain.model.StatusTentativa;
 import br.com.gestorAssinaturas.domain.model.TentativaPagamento;
+import br.com.gestorAssinaturas.domain.model.Usuario;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.support.TransactionOperations;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,6 +50,9 @@ class CriarAssinaturaServiceTest {
     @Mock
     private GatewayPagamentoPort gatewayPagamentoPort;
 
+    @Mock
+    private UsuarioRepositoryPort usuarioRepositoryPort;
+
     private CriarAssinaturaService service;
 
     @BeforeEach
@@ -53,11 +61,15 @@ class CriarAssinaturaServiceTest {
                 assinaturaRepositoryPort,
                 tentativaPagamentoRepositoryPort,
                 gatewayPagamentoPort,
+                usuarioRepositoryPort,
                 TransactionOperations.withoutTransaction());
     }
 
     private CriarAssinaturaCommand comando() {
-        return new CriarAssinaturaCommand(UUID.randomUUID(), Plano.BASICO);
+        UUID usuarioId = UUID.randomUUID();
+        when(usuarioRepositoryPort.buscarPorId(usuarioId))
+                .thenReturn(Optional.of(new Usuario(usuarioId, "Fulano", "fulano@teste.com")));
+        return new CriarAssinaturaCommand(usuarioId, Plano.BASICO);
     }
 
     @Test
@@ -113,5 +125,30 @@ class CriarAssinaturaServiceTest {
         verify(tentativaPagamentoRepositoryPort, never()).salvar(any());
         verify(gatewayPagamentoPort, never()).cobrar(any(), anyString());
     }
-}
 
+    @Test
+    void usuarioInexistenteLancaExcecaoSemChamarGateway() {
+        UUID usuarioId = UUID.randomUUID();
+        when(usuarioRepositoryPort.buscarPorId(usuarioId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.criar(new CriarAssinaturaCommand(usuarioId, Plano.BASICO)))
+                .isInstanceOf(UsuarioNaoEncontradoException.class);
+
+        verify(gatewayPagamentoPort, never()).cobrar(any(), anyString());
+        verify(assinaturaRepositoryPort, never()).salvar(any());
+    }
+
+    @Test
+    void usuarioInativoLancaExcecaoSemChamarGateway() {
+        UUID usuarioId = UUID.randomUUID();
+        Usuario usuarioInativo = new Usuario(usuarioId, "Fulano", "fulano@teste.com");
+        usuarioInativo.excluir();
+        when(usuarioRepositoryPort.buscarPorId(usuarioId)).thenReturn(Optional.of(usuarioInativo));
+
+        assertThatThrownBy(() -> service.criar(new CriarAssinaturaCommand(usuarioId, Plano.BASICO)))
+                .isInstanceOf(UsuarioInativoException.class);
+
+        verify(gatewayPagamentoPort, never()).cobrar(any(), anyString());
+        verify(assinaturaRepositoryPort, never()).salvar(any());
+    }
+}

@@ -4,6 +4,7 @@ import br.com.gestorAssinaturas.adapter.in.web.controller.request.CriarAssinatur
 import br.com.gestorAssinaturas.adapter.in.web.controller.request.CriarUsuarioRequest;
 import br.com.gestorAssinaturas.adapter.in.web.controller.response.AssinaturaResponse;
 import br.com.gestorAssinaturas.adapter.in.web.controller.response.UsuarioResponse;
+
 import br.com.gestorAssinaturas.adapter.out.persistencia.AssinaturaJpaRepository;
 import br.com.gestorAssinaturas.domain.model.Assinatura;
 import br.com.gestorAssinaturas.domain.model.Plano;
@@ -124,7 +125,9 @@ class BuscarAssinaturaAtivaIntegrationTest {
         UUID assinaturaId = assinaturaCriada.getBody().id();
 
         // Popula o cache com o status ATIVA
-        restTemplate.getForEntity("/assinaturas/usuario/{usuarioId}", AssinaturaResponse.class, usuarioId);
+        ResponseEntity<AssinaturaResponse> consultaAntesDoCancelamento = restTemplate.getForEntity(
+                "/assinaturas/usuario/{usuarioId}", AssinaturaResponse.class, usuarioId);
+        assertThat(consultaAntesDoCancelamento.getBody().status()).isEqualTo("ATIVA");
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-Usuario-Id", usuarioId.toString());
@@ -135,11 +138,9 @@ class BuscarAssinaturaAtivaIntegrationTest {
                 AssinaturaResponse.class,
                 assinaturaId);
         assertThat(cancelamento.getStatusCode().is2xxSuccessful()).isTrue();
+        ResponseEntity<String> consultaPosCancelamento = restTemplate.getForEntity(
+                "/assinaturas/usuario/{usuarioId}", String.class, usuarioId);
 
-        AssinaturaResponse consultaPosCancelamento = restTemplate.getForObject(
-                "/assinaturas/usuario/{usuarioId}", AssinaturaResponse.class, usuarioId);
-
-        assertThat(consultaPosCancelamento.status()).isEqualTo("CANCELADA");
+        assertThat(consultaPosCancelamento.getStatusCode().value()).isEqualTo(404);
     }
 }
-
