@@ -36,4 +36,9 @@ public class AssinaturaRepositoryAdapter implements AssinaturaRepositoryPort {
     public boolean existeAtivaOuPendentePara(UUID usuarioId) {
         return assinaturaJpaRepository.existsByUsuarioIdAndStatusIn(usuarioId, STATUS_ATIVA_OU_PENDENTE);
     }
+
+    @Override
+    public Optional<Assinatura> buscarAtivaPorUsuario(UUID usuarioId) {
+        return assinaturaJpaRepository.findByUsuarioIdAndStatus(usuarioId, StatusAssinatura.ATIVA);
+    }
 }
