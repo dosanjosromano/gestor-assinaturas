@@ -6,6 +6,7 @@ import br.com.gestorAssinaturas.domain.model.Assinatura;
 import br.com.gestorAssinaturas.domain.model.StatusAssinatura;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,6 +16,8 @@ public class AssinaturaRepositoryAdapter implements AssinaturaRepositoryPort {
 
     private static final List<StatusAssinatura> STATUS_ATIVA_OU_PENDENTE =
             List.of(StatusAssinatura.ATIVA, StatusAssinatura.AGUARDANDO_PAGAMENTO);
+
+    private static final int MAX_FALHAS_RENOVACAO_CONSECUTIVAS = 3;
 
     private final AssinaturaJpaRepository assinaturaJpaRepository;
 
@@ -40,5 +43,11 @@ public class AssinaturaRepositoryAdapter implements AssinaturaRepositoryPort {
     @Override
     public Optional<Assinatura> buscarAtivaPorUsuario(UUID usuarioId) {
         return assinaturaJpaRepository.findByUsuarioIdAndStatus(usuarioId, StatusAssinatura.ATIVA);
+    }
+
+    @Override
+    public List<Assinatura> buscarElegiveisParaRenovacao(LocalDate hoje) {
+        return assinaturaJpaRepository.findByStatusAndDataExpiracaoLessThanEqualAndFalhasRenovacaoConsecutivasLessThan(
+                StatusAssinatura.ATIVA, hoje, MAX_FALHAS_RENOVACAO_CONSECUTIVAS);
     }
 }
