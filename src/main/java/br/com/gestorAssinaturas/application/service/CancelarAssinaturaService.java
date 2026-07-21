@@ -17,6 +17,7 @@ import java.util.UUID;
 @Service
 public class CancelarAssinaturaService implements CancelarAssinaturaUseCase {
 
+    private static final String NOME_CLASSE = CancelarAssinaturaService.class.getSimpleName();
     private static final String PREFIXO_CHAVE_CACHE = "assinatura:ativa:";
 
     private final AssinaturaRepositoryPort assinaturaRepositoryPort;
@@ -29,6 +30,7 @@ public class CancelarAssinaturaService implements CancelarAssinaturaUseCase {
 
     @Override
     public Assinatura cancelar(UUID assinaturaId, UUID usuarioId) {
+        log.info("[inicia] cancelar - {} - assinaturaId={} usuarioId={}", NOME_CLASSE, assinaturaId, usuarioId);
         Assinatura assinatura = assinaturaRepositoryPort.buscarPorId(assinaturaId)
                 .filter(a -> a.getUsuarioId().equals(usuarioId))
                 .orElseThrow(() -> new AssinaturaNaoEncontradaException(
@@ -48,6 +50,7 @@ public class CancelarAssinaturaService implements CancelarAssinaturaUseCase {
                     usuarioId, e.getMessage());
         }
 
+        log.info("[finaliza] cancelar - {} - assinaturaId={} usuarioId={}", NOME_CLASSE, assinaturaId, usuarioId);
         return assinatura;
     }
 }

@@ -12,14 +12,18 @@ import br.com.gestorAssinaturas.domain.exception.PagamentoRecusadoException;
 import br.com.gestorAssinaturas.domain.model.Assinatura;
 import br.com.gestorAssinaturas.domain.model.TentativaPagamento;
 import br.com.gestorAssinaturas.domain.model.TipoTentativa;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionOperations;
 
 import java.util.UUID;
 
+@Slf4j
 @Service
 public class CriarAssinaturaService implements CriarAssinaturaUseCase {
+
+    private static final String NOME_CLASSE = CriarAssinaturaService.class.getSimpleName();
 
     private final AssinaturaRepositoryPort assinaturaRepositoryPort;
     private final TentativaPagamentoRepositoryPort tentativaPagamentoRepositoryPort;
@@ -39,6 +43,7 @@ public class CriarAssinaturaService implements CriarAssinaturaUseCase {
 
     @Override
     public AssinaturaResultado criar(CriarAssinaturaCommand comando) {
+        log.info("[inicia] criar - {} - usuarioId={}", NOME_CLASSE, comando.usuarioId());
         if (assinaturaRepositoryPort.existeAtivaOuPendentePara(comando.usuarioId())) {
             throw new AssinaturaJaAtivaException(
                     "Usuário %s já possui assinatura ativa ou pendente".formatted(comando.usuarioId()));
@@ -53,7 +58,9 @@ public class CriarAssinaturaService implements CriarAssinaturaUseCase {
                 assinaturaRepositoryPort.salvar(assinatura);
                 tentativaPagamentoRepositoryPort.salvar(tentativa);
             });
+            log.info("[finaliza] criar - {} - usuarioId={}", NOME_CLASSE, comando.usuarioId());
         } catch (DataIntegrityViolationException ex) {
+            log.warn("[erro] criar - {} - usuarioId={} - motivo={}", NOME_CLASSE, comando.usuarioId(), ex.getMessage());
             throw new AssinaturaJaAtivaException(
                     "Usuário %s já possui assinatura ativa ou pendente".formatted(comando.usuarioId()));
         }
