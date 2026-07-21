@@ -12,6 +12,9 @@ import br.com.gestorAssinaturas.application.port.in.useCase.CriarAssinaturaUseCa
 import br.com.gestorAssinaturas.domain.model.Assinatura;
 import br.com.gestorAssinaturas.domain.model.StatusAssinatura;
 import br.com.gestorAssinaturas.domain.model.StatusTentativa;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,6 +42,18 @@ public class AssinaturaController {
 
     }
 
+
+    @Operation(summary = "Cria uma assinatura e processa a cobrança inicial")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Pagamento aprovado — assinatura ATIVA"),
+            @ApiResponse(responseCode = "202",
+                    description = "Pagamento ainda não confirmado (erro técnico do gateway) — assinatura "
+                            + "AGUARDANDO_PAGAMENTO, tentativa fica indeterminada"),
+            @ApiResponse(responseCode = "402", description = "Pagamento recusado pelo gateway"),
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado"),
+            @ApiResponse(responseCode = "409",
+                    description = "Usuário já possui assinatura ativa/pendente, ou usuário está inativo")
+    })
     @PostMapping
     public ResponseEntity<AssinaturaResponse> criar(@Valid @RequestBody CriarAssinaturaRequest request) {
         AssinaturaResultado resultado = criarAssinaturaUseCase.criar(
@@ -59,6 +74,12 @@ public class AssinaturaController {
         return ResponseEntity.status(httpStatus).body(response);
     }
 
+
+    @Operation(summary = "Busca uma assinatura pelo id")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Assinatura encontrada"),
+            @ApiResponse(responseCode = "404", description = "Assinatura não encontrada")
+    })
     @GetMapping("/{id}")
     public AssinaturaResponse buscarPorId(@PathVariable UUID id) {
         Assinatura assinatura = buscaAssinaturasUseCase.buscarPorId(id);
@@ -72,6 +93,12 @@ public class AssinaturaController {
                 assinatura.getDataExpiracao());
     }
 
+
+    @Operation(summary = "Busca a assinatura ativa de um usuário (cache-aside)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Assinatura ativa encontrada"),
+            @ApiResponse(responseCode = "404", description = "Usuário não possui assinatura ativa")
+    })
     @GetMapping("/usuario/{usuarioId}")
     public AssinaturaResponse buscarAtivaPorUsuario(@PathVariable UUID usuarioId) {
         AssinaturaAtivaResultado resultado = buscarAssinaturaAtivaUseCase.buscarAtiva(usuarioId);
@@ -85,6 +112,14 @@ public class AssinaturaController {
                 resultado.dataExpiracao());
     }
 
+
+
+    @Operation(summary = "Cancela uma assinatura ativa")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Assinatura cancelada"),
+            @ApiResponse(responseCode = "404", description = "Assinatura não encontrada para o usuário informado"),
+            @ApiResponse(responseCode = "409", description = "Assinatura não está ATIVA (só pode ser cancelada a partir desse status)")
+    })
     @DeleteMapping("/{id}/cancelamento")
     public AssinaturaResponse cancelar(@PathVariable UUID id, @RequestHeader("X-Usuario-Id") UUID usuarioId) {
         Assinatura assinatura = cancelarAssinaturaUseCase.cancelar(id, usuarioId);
