@@ -1,11 +1,11 @@
 spring:
   application:
-    name: assinaturas
+    name: gestor-assinaturas
 
   datasource:
     url: jdbc:postgresql://localhost:5432/assinaturas
-    username: assinaturas
-    password: assinaturas
+    username:  ${DB_USERNAME:assinaturas}
+    password:  ${DB_PASSWORD:assinaturas}
 
   jpa:
     open-in-view: false
