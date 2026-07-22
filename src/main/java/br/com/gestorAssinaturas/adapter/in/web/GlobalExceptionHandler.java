@@ -4,6 +4,7 @@ import br.com.gestorAssinaturas.domain.exception.AssinaturaJaAtivaException;
 import br.com.gestorAssinaturas.domain.exception.AssinaturaNaoEncontradaException;
 import br.com.gestorAssinaturas.domain.exception.EmailJaCadastradoException;
 import br.com.gestorAssinaturas.domain.exception.EstadoInvalidoException;
+import br.com.gestorAssinaturas.domain.exception.FalhaTecnicaPagamentoException;
 import br.com.gestorAssinaturas.domain.exception.PagamentoRecusadoException;
 import br.com.gestorAssinaturas.domain.exception.UsuarioInativoException;
 import br.com.gestorAssinaturas.domain.exception.UsuarioNaoEncontradoException;
@@ -33,6 +34,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PagamentoRecusadoException.class)
     public ProblemDetail tratarPagamentoRecusado(PagamentoRecusadoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.PAYMENT_REQUIRED, ex.getMessage());
+    }
+
+    @ExceptionHandler(FalhaTecnicaPagamentoException.class)
+    public ProblemDetail tratarFalhaTecnicaPagamento(FalhaTecnicaPagamentoException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
     }
 
     @ExceptionHandler(UsuarioNaoEncontradoException.class)

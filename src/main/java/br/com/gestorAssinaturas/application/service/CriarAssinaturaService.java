@@ -10,6 +10,7 @@ import br.com.gestorAssinaturas.application.port.out.ResultadoPagamento;
 import br.com.gestorAssinaturas.application.port.out.TentativaPagamentoRepositoryPort;
 import br.com.gestorAssinaturas.application.port.out.UsuarioRepositoryPort;
 import br.com.gestorAssinaturas.domain.exception.AssinaturaJaAtivaException;
+import br.com.gestorAssinaturas.domain.exception.FalhaTecnicaPagamentoException;
 import br.com.gestorAssinaturas.domain.exception.PagamentoRecusadoException;
 import br.com.gestorAssinaturas.domain.exception.UsuarioInativoException;
 import br.com.gestorAssinaturas.domain.exception.UsuarioNaoEncontradoException;
@@ -106,7 +107,10 @@ public class CriarAssinaturaService implements CriarAssinaturaUseCase {
                     tentativa.recusar();
                     assinatura.marcarFalhaPagamentoInicial();
                 }
-                case ERRO_TECNICO -> tentativa.marcarIndeterminada();
+                case ERRO_TECNICO -> {
+                    tentativa.marcarIndeterminada();
+                    assinatura.marcarFalhaPagamentoInicial();
+                }
             }
             assinaturaRepositoryPort.salvar(assinatura);
             tentativaPagamentoRepositoryPort.salvar(tentativa);
@@ -115,6 +119,10 @@ public class CriarAssinaturaService implements CriarAssinaturaUseCase {
         if (resultadoPagamento == ResultadoPagamento.RECUSADO) {
             throw new PagamentoRecusadoException(
                     "Pagamento recusado para a assinatura %s".formatted(assinatura.getId()));
+        }
+        if (resultadoPagamento == ResultadoPagamento.ERRO_TECNICO) {
+            throw new FalhaTecnicaPagamentoException(
+                    "Falha técnica do gateway ao processar pagamento da assinatura %s".formatted(assinatura.getId()));
         }
 
         return new AssinaturaResultado(

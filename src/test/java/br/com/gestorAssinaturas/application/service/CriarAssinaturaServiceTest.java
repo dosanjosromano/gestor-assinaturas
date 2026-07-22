@@ -8,6 +8,7 @@ import br.com.gestorAssinaturas.application.port.out.ResultadoPagamento;
 import br.com.gestorAssinaturas.application.port.out.TentativaPagamentoRepositoryPort;
 import br.com.gestorAssinaturas.application.port.out.UsuarioRepositoryPort;
 import br.com.gestorAssinaturas.domain.exception.AssinaturaJaAtivaException;
+import br.com.gestorAssinaturas.domain.exception.FalhaTecnicaPagamentoException;
 import br.com.gestorAssinaturas.domain.exception.PagamentoRecusadoException;
 import br.com.gestorAssinaturas.domain.exception.UsuarioInativoException;
 import br.com.gestorAssinaturas.domain.exception.UsuarioNaoEncontradoException;
@@ -103,15 +104,21 @@ class CriarAssinaturaServiceTest {
     }
 
     @Test
-    void erroTecnicoMantemAguardandoPagamentoComTentativaIndeterminada() {
+    void erroTecnicoPersisteFalhaPagamentoComTentativaIndeterminadaELancaExcecao() {
         when(assinaturaRepositoryPort.existeAtivaOuPendentePara(any())).thenReturn(false);
         when(gatewayPagamentoPort.cobrar(any(BigDecimal.class), anyString()))
                 .thenReturn(ResultadoPagamento.ERRO_TECNICO);
 
-        AssinaturaResultado resultado = service.criar(comando());
+        assertThatThrownBy(() -> service.criar(comando()))
+                .isInstanceOf(FalhaTecnicaPagamentoException.class);
 
-        assertThat(resultado.status()).isEqualTo(StatusAssinatura.AGUARDANDO_PAGAMENTO);
-        assertThat(resultado.statusTentativaPagamento()).isEqualTo(StatusTentativa.INDETERMINADA);
+        ArgumentCaptor<Assinatura> assinaturaCaptor = ArgumentCaptor.forClass(Assinatura.class);
+        verify(assinaturaRepositoryPort, times(2)).salvar(assinaturaCaptor.capture());
+        assertThat(assinaturaCaptor.getValue().getStatus()).isEqualTo(StatusAssinatura.FALHA_PAGAMENTO);
+
+        ArgumentCaptor<TentativaPagamento> tentativaCaptor = ArgumentCaptor.forClass(TentativaPagamento.class);
+        verify(tentativaPagamentoRepositoryPort, times(2)).salvar(tentativaCaptor.capture());
+        assertThat(tentativaCaptor.getValue().getStatus()).isEqualTo(StatusTentativa.INDETERMINADA);
     }
 
     @Test

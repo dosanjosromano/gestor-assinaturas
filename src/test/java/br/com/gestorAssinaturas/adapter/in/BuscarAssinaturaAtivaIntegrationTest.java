@@ -59,13 +59,16 @@ class BuscarAssinaturaAtivaIntegrationTest {
     @Autowired
     private AssinaturaJpaRepository assinaturaJpaRepository;
 
+    private UUID criarUsuario() {
+        CriarUsuarioRequest request = new CriarUsuarioRequest("Fulano de Tal", "fulano-" + UUID.randomUUID() + "@teste.com");
+        ResponseEntity<UsuarioResponse> resposta =
+                restTemplate.postForEntity("/usuarios", request, UsuarioResponse.class);
+        return resposta.getBody().id();
+    }
+
     @Test
     void ttlExpiraEConsultaSeguinteVoltaAoBanco() throws InterruptedException {
-        ResponseEntity<UsuarioResponse> usuarioCriado = restTemplate.postForEntity(
-                "/usuarios",
-                new CriarUsuarioRequest("Usuário Teste", UUID.randomUUID() + "@teste.com"),
-                UsuarioResponse.class);
-        UUID usuarioId = usuarioCriado.getBody().id();
+        UUID usuarioId = criarUsuario();
 
         restTemplate.postForEntity(
                 "/assinaturas", new CriarAssinaturaRequest(usuarioId, Plano.BASICO), AssinaturaResponse.class);
@@ -91,11 +94,7 @@ class BuscarAssinaturaAtivaIntegrationTest {
 
     @Test
     void redisIndisponivelDuranteConsultaCaiParaOBanco() {
-        ResponseEntity<UsuarioResponse> usuarioCriado = restTemplate.postForEntity(
-                "/usuarios",
-                new CriarUsuarioRequest("Usuário Teste Resiliência", UUID.randomUUID() + "@teste.com"),
-                UsuarioResponse.class);
-        UUID usuarioId = usuarioCriado.getBody().id();
+        UUID usuarioId = criarUsuario();
 
         ResponseEntity<AssinaturaResponse> assinaturaCriada = restTemplate.postForEntity(
                 "/assinaturas", new CriarAssinaturaRequest(usuarioId, Plano.BASICO), AssinaturaResponse.class);
@@ -114,11 +113,7 @@ class BuscarAssinaturaAtivaIntegrationTest {
 
     @Test
     void cancelamentoInvalidaCacheImediatamente() {
-        ResponseEntity<UsuarioResponse> usuarioCriado = restTemplate.postForEntity(
-                "/usuarios",
-                new CriarUsuarioRequest("Usuário Teste Cancelamento", UUID.randomUUID() + "@teste.com"),
-                UsuarioResponse.class);
-        UUID usuarioId = usuarioCriado.getBody().id();
+        UUID usuarioId = criarUsuario();
 
         ResponseEntity<AssinaturaResponse> assinaturaCriada = restTemplate.postForEntity(
                 "/assinaturas", new CriarAssinaturaRequest(usuarioId, Plano.BASICO), AssinaturaResponse.class);

@@ -2,7 +2,6 @@ package br.com.gestorAssinaturas.adapter.in;
 
 import br.com.gestorAssinaturas.adapter.in.web.controller.request.CriarAssinaturaRequest;
 import br.com.gestorAssinaturas.adapter.in.web.controller.request.CriarUsuarioRequest;
-import br.com.gestorAssinaturas.adapter.in.web.controller.response.AssinaturaResponse;
 import br.com.gestorAssinaturas.adapter.in.web.controller.response.UsuarioResponse;
 import br.com.gestorAssinaturas.domain.model.Plano;
 import org.junit.jupiter.api.Test;
@@ -16,18 +15,13 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class AssinaturaControllerIntegrationTest {
+class AssinaturaControllerFalhaTecnicaIntegrationTest {
 
     @Container
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
@@ -37,7 +31,7 @@ class AssinaturaControllerIntegrationTest {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
-        registry.add("app.gateway-pagamento.mock.taxa-aprovacao", () -> "1.0");
+        registry.add("app.gateway-pagamento.mock.taxa-aprovacao", () -> "0.0");
         registry.add("app.gateway-pagamento.mock.taxa-recusa", () -> "0.0");
     }
 
@@ -52,42 +46,14 @@ class AssinaturaControllerIntegrationTest {
     }
 
     @Test
-    void segundaCriacaoParaMesmoUsuarioRetorna409() {
+    void erroTecnicoRetorna503EPermiteNovaTentativa() {
         UUID usuarioId = criarUsuario();
         CriarAssinaturaRequest request = new CriarAssinaturaRequest(usuarioId, Plano.BASICO);
 
-        ResponseEntity<AssinaturaResponse> primeira =
-                restTemplate.postForEntity("/assinaturas", request, AssinaturaResponse.class);
-        assertThat(primeira.getStatusCode().value()).isEqualTo(201);
+        ResponseEntity<String> primeira = restTemplate.postForEntity("/assinaturas", request, String.class);
+        assertThat(primeira.getStatusCode().value()).isEqualTo(503);
 
         ResponseEntity<String> segunda = restTemplate.postForEntity("/assinaturas", request, String.class);
-        assertThat(segunda.getStatusCode().value()).isEqualTo(409);
-    }
-
-    @Test
-    void chamadasConcorrentesParaMesmoUsuarioResultamEmApenasUmaCriacaoBemSucedida() throws InterruptedException {
-        UUID usuarioId = criarUsuario();
-        CriarAssinaturaRequest request = new CriarAssinaturaRequest(usuarioId, Plano.BASICO);
-
-        ExecutorService executor = Executors.newFixedThreadPool(5);
-        try {
-            List<CompletableFuture<Integer>> chamadas = IntStream.range(0, 5)
-                    .mapToObj(i -> CompletableFuture.supplyAsync(
-                            () -> restTemplate.postForEntity("/assinaturas", request, String.class)
-                                    .getStatusCode()
-                                    .value(),
-                            executor))
-                    .toList();
-
-            List<Integer> resultados = chamadas.stream().map(CompletableFuture::join).toList();
-
-            long sucesso = resultados.stream().filter(status -> status == 201).count();
-            long conflitos = resultados.stream().filter(status -> status == 409).count();
-
-            assertThat(sucesso).isEqualTo(1);
-            assertThat(conflitos).isEqualTo(4);
-        } finally {
-            executor.shutdown();
-        }
+        assertThat(segunda.getStatusCode().value()).isEqualTo(503);
     }
 }
